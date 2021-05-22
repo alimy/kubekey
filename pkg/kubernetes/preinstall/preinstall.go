@@ -19,7 +19,7 @@ package preinstall
 import (
 	"crypto/sha256"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -191,9 +191,17 @@ func sha256sum(path string) (string, error) {
 	}
 	defer file.Close()
 
-	data, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
+	h := sha256.New()
+	b := make([]byte, 0, 4096)
+	for {
+		n, err := file.Read(b)
+		if err != nil {
+			if err == io.EOF {
+				return fmt.Sprintf("%x", h.Sum(nil)), nil
+			}
+			return "", err
+		}
+		h.Write(b[:n])
+		b = b[:1]
 	}
-	return fmt.Sprintf("%x", sha256.Sum256(data)), nil
 }
